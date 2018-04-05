@@ -104,9 +104,9 @@ func XLToCSV(name string, data []byte, sheets ...int) ([][]byte, error) {
 	if len(sheets) == 0 {
 		sheets = []int{0}
 	}
-	err := ioutil.WriteFile(name, data, os.ModeTemporary)
+	_, err := os.Create(name)
 	if err != nil {
-		return nil, &Error{"XLToCSV", "writting temp", err}
+		return nil, &Error{"XLToCSV", "creating file", err}
 	}
 	defer os.Remove(name)
 
