@@ -61,11 +61,12 @@ type Storage struct {
 
 type Error struct {
 	Func string
+	Msg  string
 	Err  error
 }
 
 func (er *Error) Error() string {
-	return `storage: ` + er.Func + `: ` + er.Err.Error()
+	return `storage: ` + er.Func + `: ` + er.Msg + `: ` + er.Err.Error()
 }
 
 // NewGoogle starts storage all services.
@@ -75,18 +76,18 @@ func NewGoogle() (*Storage, error) {
 
 	b, err := ioutil.ReadFile("credentials/drive_client_secret.json")
 	if err != nil {
-		return nil, &Error{"NewGoogle", err}
+		return nil, &Error{"NewGoogle", "", err}
 	}
 
 	config, err := google.ConfigFromJSON(b, drive.DriveScope)
 	if err != nil {
-		return nil, &Error{"NewGoogle", err}
+		return nil, &Error{"NewGoogle", "", err}
 	}
 	client := auth.GetGoogleClient(ctx, config)
 
 	srv, err := drive.New(client)
 	if err != nil {
-		return nil, &Error{"NewGoogle", err}
+		return nil, &Error{"NewGoogle", "", err}
 	}
 	return &Storage{Drive: DriverService{srv}}, nil
 }
@@ -98,14 +99,14 @@ func NewGoogle() (*Storage, error) {
 // for wedgenix use. Helps convert clunky xls/xlsx files into lighter csv files.
 func XLToCSV(name string, data []byte, sheets ...int) ([][]byte, error) {
 	if len(name) == 0 {
-		return nil, errors.New("no file name")
+		return nil, &Error{"XLToCSV", "", errors.New("no file name")}
 	}
 	if len(sheets) == 0 {
 		sheets = []int{0}
 	}
 	err := ioutil.WriteFile(name, data, os.ModeTemporary)
 	if err != nil {
-		return nil, err
+		return nil, &Error{"XLToCSV", "writting temp", err}
 	}
 	defer os.Remove(name)
 
@@ -118,7 +119,7 @@ again:
 	case ".xlsx":
 		c, err := xlsx.FileToSlice(name)
 		if err != nil {
-			return nil, err
+			return nil, &Error{"XLToCSV", "file to slice .xlsx", err}
 		}
 		fileSheets = c
 	case ".xls":
@@ -128,14 +129,14 @@ again:
 				ext = ".txt"
 				goto again
 			}
-			return nil, err
+			return nil, &Error{"XLToCSV", "open .xls", err}
 		}
 		fileSheets = [][][]string{f.ReadAllCells()}
 	case ".txt":
 		noQuote := regexp.MustCompile(`"([^"]+)"`)
 		b, err := ioutil.ReadFile(name)
 		if err != nil {
-			return nil, err
+			return nil, &Error{"XLToCSV", "read file .txt", err}
 		}
 		data := string(b)
 		splitRow := strings.Split(data, "\n")
@@ -152,7 +153,7 @@ again:
 		fileSheets = [][][]string{newData}
 
 	default:
-		return nil, errors.New("'" + ext + "' is not an Excel format")
+		return nil, &Error{"XLToCSV", "default", errors.New("'" + ext + "' is not an Excel format")}
 	}
 	files := [][]byte{}
 	for _, sheet := range sheets {
