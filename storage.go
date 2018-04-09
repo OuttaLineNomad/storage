@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/OuttaLineNomad/excelxml"
 	"github.com/OuttaLineNomad/storage/auth"
 	"github.com/WedgeNix/xls"
 	"github.com/tealeg/xlsx"
@@ -126,6 +127,16 @@ again:
 		f, err := xls.Open(name, "")
 		if err != nil {
 			if err.Error() == "not an excel file" {
+				data, err := testXML(name)
+				if err != nil {
+					if !strings.Contains(err.Error(), "file is not an excel xml file") {
+						return nil, &Error{"XLToCSV", "find xml", err}
+					}
+				}
+				if len(data) > 0 {
+					fileSheets = [][][]string{data}
+					break
+				}
 				ext = ".txt"
 				goto again
 			}
@@ -164,4 +175,17 @@ again:
 	}
 
 	return files, nil
+}
+
+func testXML(name string) ([][]string, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, &Error{"XLToCSV", "testXML", err}
+	}
+	defer f.Close()
+	sheets, err := excelxml.SliceXML(f)
+	if err != nil {
+		return nil, &Error{"XLToCSV", "testXML", err}
+	}
+	return sheets.Worksheets[0].Table, nil
 }
