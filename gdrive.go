@@ -7,7 +7,15 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-// GetParentID graps the folder ID for folder name.
+// func (ds *DriverService) GetFile(id string) (*drive.File, error) {
+// 	file, err := ds.Files.Get(id).Do()
+// 	if err != nil {
+// 		return nil, &Error{"GetFile", "files get call", err}
+// 	}
+// 	file.
+// }
+
+// GetParentID grabs the folder ID for folder name.
 func (ds *DriverService) GetParentID(folder string) (string, error) {
 	file, err := ds.Files.List().Q(`name = "` + folder + `" and '0BzaYO4E7QW9VN2ZuTjVBc1Zydzg' in parents and mimeType = 'application/vnd.google-apps.folder'`).Do()
 	if err != nil {
