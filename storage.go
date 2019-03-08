@@ -93,6 +93,22 @@ func NewGoogle() (*Storage, error) {
 	return &Storage{Drive: DriverService{srv}}, nil
 }
 
+// NewGoogleInGoogle starts storage all services only on google servers.
+func NewGoogleInGoogle() (*Storage, error) {
+	// Google Drive Service
+	ctx := context.Background()
+
+	oauthClient, err := google.DefaultClient(ctx, drive.DriveScope)
+	if err != nil {
+		return nil, &Error{"NewGoogleInGoogle", "", err}
+	}
+	srv, err := drive.New(oauthClient)
+	if err != nil {
+		return nil, &Error{"NewGoogleInGoogle", "", err}
+	}
+	return &Storage{Drive: DriverService{srv}}, nil
+}
+
 // XLToCSV converts excel file data to csv file data.
 // Uses sheets parameter to save separate csv files.
 //
